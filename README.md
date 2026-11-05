@@ -1,2 +1,41 @@
-# Simula-o-interativa-de-buraco-negro
-Uma Simulação de buracos negros utilizando HTML, CSS e JavaScript, Ele roda em um Canvas.
+# Buraco Negro Educativo
+
+Simulação interativa de um buraco negro com uma aula guiada, um laboratório para experimentar e um quiz. Feito apenas com **HTML, CSS e JavaScript**, sem bibliotecas externas.
+
+## Ver a aula
+
+- **Online:** https://claude.ai/artifact/44oDW66ge3fpJScGg5bKQZ
+- **No seu computador:** baixe o arquivo `buraco-negro.html` e abra no navegador (duplo clique). Não precisa instalar nada.
+
+Para seguir a aula, abra a aba **Aprender** no painel lateral (no celular, o painel fica na parte de baixo da tela) e use os botões **Próxima** e **Anterior**.
+
+## O que tem
+
+| Aba | Conteúdo |
+|---|---|
+| **Aprender** | 6 lições: o que é um buraco negro, raio de Schwarzschild, lente gravitacional, esfera de fótons, disco de acreção com a última órbita estável, tempo e velocidade de escape |
+| **Laboratório** | Massa (de 1 a 10 bilhões de M☉, com atalhos para Sagitário A* e M87*), inclinação do disco, lente gravitacional e círculos que marcam as distâncias importantes |
+| **Quiz** | 5 perguntas com explicação de cada resposta e pontuação final |
+
+## Como interagir
+
+- **Clique e arraste** na tela para lançar matéria e ver se ela orbita ou é engolida.
+- **Mova o cursor** para ler, no canto superior esquerdo, a distância em rs, a velocidade de escape e o ritmo do tempo naquele ponto.
+- **Roda do mouse** muda a massa do buraco negro.
+- Nas lições 2, 3 e 5, use os botões dentro do texto para testar cada conceito.
+
+## Tecnologias
+
+- HTML e CSS para o layout e o painel
+- JavaScript puro com `<canvas>` para a simulação (gravidade com correção da relatividade geral, lente gravitacional e disco de acreção)
+
+## Estrutura
+
+```
+buraco-negro.html   # o projeto inteiro (HTML + CSS + JS em um só arquivo)
+README.md
+```
+
+## Aviso
+
+É um modelo simplificado, feito para ensinar. O tamanho na tela não é proporcional à massa real, e a sombra é desenhada com raio igual ao horizonte de eventos. Na imagem real de um buraco negro, a sombra parece cerca de 2,6 vezes maior por causa da lente gravitacional.

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Buraco Negro Educativo</title>
+<style>
+:root{color-scheme:dark;--bg:#02030a;--fg:#e8ecff;--mut:#a9b0d0;--panel:rgba(14,16,34,.9);--ac:#ffb259;--ln:rgba(255,255,255,.14);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+#read{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:12px;font-size:12.5px;line-height:1.5;pointer-events:none;text-shadow:0 1px 4px #000;max-width:calc(100% - 24px)}
+#lg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+aside{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));bottom:12px;width:350px;background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--ln);border-radius:14px;display:flex;flex-direction:column;overflow:hidden}
+nav{display:flex;border-bottom:1px solid var(--ln)}
+nav button{flex:1;border:0;border-radius:0;padding:11px 6px;background:transparent;color:var(--mut)}
+nav button.on{color:var(--ac);box-shadow:inset 0 -2px var(--ac)}
+.tab{display:none;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));overflow-y:auto;font-size:14px;line-height:1.55}
+.tab.on{display:block}
+h3{margin:0 0 8px;font-size:16px;color:var(--ac)}p{margin:0 0 10px}
+button{background:transparent;color:var(--fg);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;margin:2px 4px 2px 0}
+button:hover{border-color:var(--ac);color:var(--ac)}
+.step{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:var(--mut);font-size:13px}
+label{display:block;margin:10px 0 2px;color:var(--mut);font-size:13px}input[type=range]{width:100%;accent-color:var(--ac)}
+.note{font-size:12px;color:var(--mut)}
+@media (max-width:760px){aside{left:0;right:0;bottom:0;top:54%;width:auto;border-radius:14px 14px 0 0}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="read">
+  <b>Buraco Negro</b> · M = <span id="rm"></span> M☉ · rs = <span id="rr"></span><br>
+  Engolidas: <span id="n">0</span> · clique e arraste para lançar matéria<br>
+  <span id="lg"></span><span id="pr"></span>
+</div>
+<aside>
+  <nav><button data-t="learn" class="on">Aprender</button><button data-t="lab">Laboratório</button><button data-t="quiz">Quiz</button></nav>
+  <section id="learn" class="tab on"></section>
+  <section id="lab" class="tab">
+    <h3>Laboratório</h3>
+    <p>Mude os parâmetros e observe o que acontece.</p>
+    <label>Massa (escala logarítmica, de 1 a 10 bilhões de M☉)</label>
+    <input id="m" type="range" min="0" max="10" step="0.01" value="1">
+    <p><button onclick="preset(1)">Estelar (10 M☉)</button><button onclick="preset(6.63)">Sagitário A*</button><button onclick="preset(9.81)">M87*</button></p>
+    <label>Inclinação do disco</label>
+    <input id="t" type="range" min="5" max="85" value="72">
+    <label><input id="l" type="checkbox" checked> Lente gravitacional</label>
+    <label><input id="r1" type="checkbox" checked> Mostrar horizonte de eventos</label>
+    <label><input id="r2" type="checkbox"> Mostrar esfera de fótons</label>
+    <label><input id="r3" type="checkbox"> Mostrar última órbita estável</label>
+    <p style="margin-top:12px"><button onclick="lancar(5)">Órbita a 5 rs</button><button onclick="lancar(2)">Órbita a 2 rs</button><button onclick="ps=[]">Limpar matéria</button></p>
+    <p class="note">Modelo simplificado: o tamanho na tela não é proporcional à massa real, e a sombra é desenhada com raio igual ao horizonte. Na imagem real, a sombra parece ~2,6 vezes maior por causa da lente.</p>
+  </section>
+  <section id="quiz" class="tab"></section>
+</aside>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),$=id=>document.getElementById(id);
+let W,H,cx,cy,S,wide,exp=1,tilt=Math.cos(72*Math.PI/180),lens=true,rings=[1,0,0],eaten=0,flash=0,drag=null,mouse=null,ps=[],stars=[],disk=[],last=performance.now();
+const M=()=>Math.pow(10,exp),RS=()=>(16+exp*7)*S,CS=()=>420*S,GM=()=>.5*RS()*CS()*CS();
+const nf=(v,d)=>v.toFixed(d).replace('.',',');
+const big=v=>v>=1e9?nf(v/1e9,1)+' bilhões':v>=1e6?nf(v/1e6,1)+' milhões':v>=1e4?Math.round(v).toLocaleString('pt-BR'):nf(v,v<100?1:0);
+function resize(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*d;c.height=H*d;x.setTransform(d,0,0,d,0,0);wide=W>760;
+  if(wide){cx=(W-374)/2;cy=H/2;S=Math.min(W-374,H)/650}else{cx=W/2;cy=H*.28;S=Math.min(W,H*.54)/600}}
+addEventListener('resize',resize);resize();
+for(let i=0;i<650;i++)stars.push({x:Math.random(),y:Math.random(),s:Math.random()*1.3+.3,t:Math.random()*6.28});
+for(let i=0;i<1500;i++)disk.push({a:Math.random()*6.283,k:1.8+Math.pow(Math.random(),1.6)*4.2});
+function setExp(v){exp=Math.max(0,Math.min(10,v));$('m').value=exp}
+function preset(v){setExp(v)}
+function lancar(k){const R=RS(),a=Math.random()*6.283,r=k*R,v=Math.sqrt(GM()/r);
+  ps.push({x:cx+r*Math.cos(a),y:cy+r*Math.sin(a),vx:-v*Math.sin(a),vy:v*Math.cos(a),tr:[],h:k>=3?170:10})}
+function toggleLens(){lens=!lens;$('l').checked=lens}
+$('m').oninput=e=>setExp(+e.target.value);
+$('t').oninput=e=>tilt=Math.cos(e.target.value*Math.PI/180);
+$('l').onchange=e=>lens=e.target.checked;
+[1,2,3].forEach(i=>$('r'+i).onchange=e=>{rings[i-1]=e.target.checked?1:0});
+addEventListener('wheel',e=>{if(e.target===c)setExp(exp-e.deltaY*.002)},{passive:true});
+c.addEventListener('pointerdown',e=>{mouse={x:e.clientX,y:e.clientY};drag={x0:e.clientX,y0:e.clientY,x1:e.clientX,y1:e.clientY};c.setPointerCapture(e.pointerId)});
+c.addEventListener('pointermove',e=>{mouse={x:e.clientX,y:e.clientY};if(drag){drag.x1=e.clientX;drag.y1=e.clientY}});
+c.addEventListener('pointerleave',()=>{if(!drag)mouse=null});
+c.addEventListener('pointerup',()=>{if(!drag)return;const k=2.2;ps.push({x:drag.x0,y:drag.y0,vx:(drag.x1-drag.x0)*k,vy:(drag.y1-drag.y0)*k,tr:[],h:Math.random()*60+170});drag=null});
+// abas
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));b.classList.add('on');$(b.dataset.t).classList.add('on')});
+// lições
+const LS=[
+{r:[1,0,0],l:1,h:`<h3>1. O que é um buraco negro?</h3><p>É uma região onde a gravidade é tão intensa que nem a luz consegue escapar. Pode surgir, por exemplo, quando uma estrela muito massiva colapsa no fim da vida.</p><p>A fronteira sem volta é o <b>horizonte de eventos</b> (círculo vermelho). Clique e arraste na tela para lançar matéria e veja o que acontece quando ela cruza essa fronteira.</p>`},
+{r:[1,0,0],l:1,h:`<h3>2. O raio de Schwarzschild</h3><p>O tamanho do horizonte depende só da massa: <b>rs = 2GM/c²</b>, cerca de 2,95 km para cada massa solar (M☉). Se o Sol virasse um buraco negro, teria só uns 6 km de diâmetro.</p><p>Compare três casos. Os valores aparecem no canto superior esquerdo.</p><p><button onclick="preset(1)">Estelar (10 M☉)</button><button onclick="preset(6.63)">Sagitário A*</button><button onclick="preset(9.81)">M87*</button></p><p class="note">Sagitário A* tem cerca de 4,3 milhões de M☉ e M87* cerca de 6,5 bilhões. O desenho na tela é só simbólico.</p>`},
+{r:[0,0,0],l:1,h:`<h3>3. Lente gravitacional</h3><p>A massa curva o espaço-tempo, e a luz segue essa curvatura. Estrelas que estão atrás do buraco negro aparecem deslocadas, formando um anel ao redor dele (anel de Einstein).</p><p>Alterne para ver a diferença:</p><p><button onclick="toggleLens()">Ligar/desligar lente</button></p>`},
+{r:[1,1,0],l:1,h:`<h3>4. Esfera de fótons</h3><p>A <b>1,5 rs</b> do centro a gravidade é forte o bastante para fazer a luz orbitar o buraco negro, mas essa órbita é instável: qualquer perturbação a faz fugir ou cair. É isso que forma o anel brilhante (círculo dourado).</p><p class="note">Na imagem real de um buraco negro, a “sombra” parece ~2,6 rs porque a luz é desviada. Aqui o desenho é simplificado.</p>`},
+{r:[1,1,1],l:1,h:`<h3>5. Disco de acreção e última órbita estável</h3><p>A matéria que cai forma um disco que esquenta por atrito e brilha. O lado que se aproxima de nós parece mais brilhante (efeito Doppler).</p><p>Na relatividade geral, não existem órbitas circulares estáveis abaixo de <b>3 rs</b> (círculo ciano). Teste a diferença:</p><p><button onclick="lancar(5)">Órbita a 5 rs</button><button onclick="lancar(2)">Órbita a 2 rs</button></p><p class="note">A de 5 rs orbita; a de 2 rs espirala para dentro.</p>`},
+{r:[1,0,0],l:1,h:`<h3>6. Tempo e velocidade de escape</h3><p>Mova o cursor sobre a tela e leia, no canto superior esquerdo, os valores da posição dele.</p><p>A velocidade de escape é <b>√(rs/r)</b> da velocidade da luz: chega a 100% no horizonte. Para um observador distante, um relógio perto do horizonte anda mais devagar, com fator <b>√(1 − rs/r)</b>, e quase pára ao se aproximar dele.</p>`}
+];
+let li=0;
+function showLesson(i){li=i;const L=LS[i];rings=L.r.slice();[1,2,3].forEach(k=>$('r'+k).checked=!!rings[k-1]);
+  $('learn').innerHTML=L.h+`<div class="step"><button onclick="showLesson(${Math.max(0,i-1)})" ${i?'':'disabled'}>‹ Anterior</button><span>${i+1} / ${LS.length}</span><button onclick="${i<LS.length-1?`showLesson(${i+1})`:`document.querySelector('[data-t=quiz]').click()`}">${i<LS.length-1?'Próxima ›':'Ir ao quiz ›'}</button></div>`}
+showLesson(0);
+// quiz
+const Q=[
+{q:"O que define o horizonte de eventos?",o:["Uma superfície sólida","A fronteira além da qual nem a luz escapa","A região mais quente do disco","O limite externo do disco"],a:1,e:"É a fronteira sem volta: dentro dela, a velocidade de escape passa da velocidade da luz."},
+{q:"De que depende o raio do horizonte (rs)?",o:["Da massa","Da cor do disco","Da rotação do observador","Da distância das estrelas"],a:0,e:"rs = 2GM/c². Dobrar a massa dobra o raio."},
+{q:"Por que estrelas de fundo parecem deformadas perto do buraco negro?",o:["Elas explodem","Lente gravitacional: a massa curva o caminho da luz","O disco reflete a luz","É só um efeito da câmera"],a:1,e:"A luz segue o espaço-tempo curvo, o que desloca e distorce as imagens."},
+{q:"Abaixo de qual distância não há órbita circular estável (buraco negro sem rotação)?",o:["1 rs","1,5 rs","3 rs","10 rs"],a:2,e:"A última órbita circular estável fica em 3 rs (6GM/c²). Mais perto, a matéria cai."},
+{q:"Visto de longe, um relógio perto do horizonte…",o:["Anda mais rápido","Anda no mesmo ritmo","Anda mais devagar","Anda para trás"],a:2,e:"Fator √(1 − rs/r): quanto mais perto do horizonte, mais devagar."}
+];
+let qi=0,sc=0;
+function renderQ(){const el=$('quiz');
+  if(qi>=Q.length){el.innerHTML=`<h3>Resultado</h3><p>Você acertou <b>${sc} de ${Q.length}</b>.</p><p><button onclick="qi=0;sc=0;renderQ()">Refazer</button><button onclick="document.querySelector('[data-t=learn]').click()">Rever lições</button></p>`;return}
+  const q=Q[qi];el.innerHTML=`<h3>Pergunta ${qi+1} / ${Q.length}</h3><p>${q.q}</p>`+q.o.map((t,i)=>`<button style="display:block;width:100%;text-align:left;margin:6px 0" onclick="ans(${i})">${t}</button>`).join('')+'<div id="fb"></div>'}
+function ans(i){const q=Q[qi],ok=i===q.a;if(ok)sc++;
+  [...$('quiz').querySelectorAll('button')].forEach((b,k)=>{b.disabled=true;if(k===q.a)b.style.borderColor='#5ee08a';else if(k===i)b.style.borderColor='#ff6b6b'});
+  $('fb').innerHTML=`<p style="margin-top:10px"><b>${ok?'Correto!':'Não foi dessa vez.'}</b> ${q.e}</p><button onclick="qi++;renderQ()">${qi<Q.length-1?'Próxima':'Ver resultado'}</button>`}
+renderQ();
+// física
+function step(dt){
+  const R=RS(),g=GM(),c2=CS()*CS();
+  for(let n=0;n<8;n++){const h=dt/8;
+    for(let i=ps.length-1;i>=0;i--){const p=ps[i],dx=cx-p.x,dy=cy-p.y,r2=dx*dx+dy*dy,r=Math.sqrt(r2),L=-dx*p.vy+dy*p.vx,a=g/r2+3*g*L*L/(c2*r2*r2);
+      p.vx+=a*dx/r*h;p.vy+=a*dy/r*h;p.x+=p.vx*h;p.y+=p.vy*h;
+      if(r<R){ps.splice(i,1);eaten++;$('n').textContent=eaten;flash=1}
+      else if(r>Math.max(W,H)*3)ps.splice(i,1)}}
+  for(const p of ps){p.tr.push(p.x,p.y);if(p.tr.length>90)p.tr.splice(0,2)}
+  flash=Math.max(0,flash-dt*2.5);
+}
+function drawStars(t,R){
+  for(const s of stars){let sx=s.x*W,sy=s.y*H;
+    if(lens){const dx=sx-cx,dy=sy-cy,r=Math.hypot(dx,dy)||1,E=R*1.6,rr=.5*(r+Math.sqrt(r*r+4*E*E));sx=cx+dx/r*rr;sy=cy+dy/r*rr}
+    x.globalAlpha=.45+.55*Math.sin(t*.0015+s.t)**2;x.fillStyle='#dfe6ff';x.fillRect(sx,sy,s.s,s.s)}
+  x.globalAlpha=1}
+function drawDisk(front,dt,R,g){
+  x.globalCompositeOperation='lighter';
+  for(const d of disk){const r=d.k*R;
+    if(front===false)d.a+=Math.sqrt(g/(r*r*r))*dt;
+    const sa=Math.sin(d.a),ca=Math.cos(d.a);if((sa>0)!==front)continue;
+    const px=cx+r*ca,py=cy+r*sa*tilt,b=.55-.45*ca,f=1-(d.k-1.8)/4.2,z=(1.1+f*1.4)*S+.5;
+    x.fillStyle=`hsla(${20+b*32},100%,${38+b*34}%,${(.15+.7*f)*(.5+b*.7)})`;x.fillRect(px,py,z,z)}
+  x.globalCompositeOperation='source-over'}
+const RC=['#ff6b6b','#ffd166','#5ee0ff'],RN=['Horizonte de eventos (1 rs)','Esfera de fótons (1,5 rs)','Última órbita estável (3 rs)'],RK=[1,1.5,3];
+function drawRings(R){x.lineWidth=1.5;x.setLineDash([6,5]);
+  RK.forEach((k,i)=>{if(!rings[i])return;x.strokeStyle=RC[i];x.beginPath();x.arc(cx,cy,R*k,0,6.283);x.stroke()});x.setLineDash([])}
+function readout(R){
+  $('rm').textContent=big(M());const km=2.953*M(),u=km/1.496e8;
+  $('rr').textContent=big(km)+' km'+(km>=1e6?` (≈ ${nf(u,u<10?2:0)} UA)`:'');
+  $('lg').innerHTML=rings.map((v,i)=>v?`<i style="background:${RC[i]}"></i>${RN[i]}&nbsp; `:'').join('')+(rings.some(v=>v)?'<br>':'');
+  if(mouse){const r=Math.hypot(mouse.x-cx,mouse.y-cy)/R;
+    $('pr').textContent=r<=1?'Cursor dentro do horizonte: nada escapa.':`Cursor a ${nf(r,1)} rs · escape: ${nf(Math.sqrt(1/r)*100,0)}% de c · relógio: ${nf(Math.sqrt(1-1/r),2)}× o ritmo de longe`}
+  else $('pr').textContent=''}
+function frame(now){
+  const dt=Math.min(.033,(now-last)/1000);last=now;step(dt);
+  const R=RS(),g=GM();
+  x.fillStyle='#02030a';x.fillRect(0,0,W,H);
+  drawStars(now,R);drawDisk(false,dt,R,g);
+  const gr=x.createRadialGradient(cx,cy,R*.9,cx,cy,R*2.6);
+  gr.addColorStop(0,`rgba(255,170,80,${.28+flash*.4})`);gr.addColorStop(1,'rgba(255,120,40,0)');
+  x.fillStyle=gr;x.beginPath();x.arc(cx,cy,R*2.6,0,6.283);x.fill();
+  x.fillStyle='#000';x.beginPath();x.arc(cx,cy,R,0,6.283);x.fill();
+  x.save();x.shadowColor=`rgba(255,190,110,${.8+flash*.2})`;x.shadowBlur=18+flash*30;
+  x.strokeStyle=`rgba(255,226,180,${.85+flash*.15})`;x.lineWidth=2.2*S+flash*3;
+  x.beginPath();x.arc(cx,cy,R*1.03,0,6.283);x.stroke();x.restore();
+  drawDisk(true,dt,R,g);drawRings(R);
+  for(const p of ps){x.lineWidth=2*S;x.lineCap='round';const n=p.tr.length/2;
+    for(let i=1;i<n;i++){x.strokeStyle=`hsla(${p.h},100%,70%,${i/n*.8})`;x.beginPath();x.moveTo(p.tr[i*2-2],p.tr[i*2-1]);x.lineTo(p.tr[i*2],p.tr[i*2+1]);x.stroke()}
+    x.fillStyle='#fff';x.beginPath();x.arc(p.x,p.y,2.4*S+.6,0,6.283);x.fill()}
+  if(drag){x.strokeStyle='rgba(255,255,255,.7)';x.setLineDash([5,5]);x.beginPath();x.moveTo(drag.x0,drag.y0);x.lineTo(drag.x1,drag.y1);x.stroke();x.setLineDash([]);
+    x.fillStyle='#fff';x.beginPath();x.arc(drag.x0,drag.y0,4,0,6.283);x.fill()}
+  readout(R);requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

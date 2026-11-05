@@ -1,6 +1,6 @@
 # Buraco Negro Educativo
 
-Simulação interativa de um buraco negro com uma aula guiada, um laboratório para experimentar e um quiz. Feita apenas com **HTML, CSS e JavaScript**, sem bibliotecas externas.
+Simulação interativa de um buraco negro com uma aula guiada, um laboratório para experimentar e um quiz. Feita apenas com **HTML, CSS e JavaScript** rodando em um canvas, sem bibliotecas externas.
 
 ## Como executar
 

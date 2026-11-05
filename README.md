@@ -1,11 +1,10 @@
 # Buraco Negro Educativo
 
-Simulação interativa de um buraco negro com uma aula guiada, um laboratório para experimentar e um quiz. Feito apenas com **HTML, CSS e JavaScript**, sem bibliotecas externas.
+Simulação interativa de um buraco negro com uma aula guiada, um laboratório para experimentar e um quiz. Feita apenas com **HTML, CSS e JavaScript**, sem bibliotecas externas.
 
-## Ver a aula
+## Como executar
 
-- **Online:** https://claude.ai/artifact/44oDW66ge3fpJScGg5bKQZ
-- **No seu computador:** baixe o arquivo `buraco-negro.html` e abra no navegador (duplo clique). Não precisa instalar nada.
+Abra `Index.html` em um navegador. Não é necessário instalar dependências nem iniciar um servidor.
 
 Para seguir a aula, abra a aba **Aprender** no painel lateral (no celular, o painel fica na parte de baixo da tela) e use os botões **Próxima** e **Anterior**.
 
@@ -32,8 +31,10 @@ Para seguir a aula, abra a aba **Aprender** no painel lateral (no celular, o pai
 ## Estrutura
 
 ```
-buraco-negro.html   # o projeto inteiro (HTML + CSS + JS em um só arquivo)
-README.md
+Index.html   # estrutura da página e controles
+style.css    # estilos e layout responsivo
+script.js    # simulação, lições, laboratório e quiz
+README.md    # instruções e descrição do projeto
 ```
 
 ## Aviso

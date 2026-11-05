@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Buraco Negro Educativo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div id="read">
+    <b>Buraco Negro</b> · M = <span id="rm"></span> M☉ · rs = <span id="rr"></span><br>
+    Engolidas: <span id="n">0</span> · clique e arraste para lançar matéria<br>
+    <span id="lg"></span><span id="pr"></span>
+  </div>
+
+  <aside>
+    <nav>
+      <button data-t="learn" class="on">Aprender</button>
+      <button data-t="lab">Laboratório</button>
+      <button data-t="quiz">Quiz</button>
+    </nav>
+
+    <section id="learn" class="tab on"></section>
+
+    <section id="lab" class="tab">
+      <h3>Laboratório</h3>
+      <p>Mude os parâmetros e observe o que acontece.</p>
+
+      <label>Massa (escala logarítmica, de 1 a 10 bilhões de M☉)</label>
+      <input id="m" type="range" min="0" max="10" step="0.01" value="1">
+
+      <p>
+        <button onclick="preset(1)">Estelar (10 M☉)</button>
+        <button onclick="preset(6.63)">Sagitário A*</button>
+        <button onclick="preset(9.81)">M87*</button>
+      </p>
+
+      <label>Inclinação do disco</label>
+      <input id="t" type="range" min="5" max="85" value="72">
+
+      <label><input id="l" type="checkbox" checked> Lente gravitacional</label>
+      <label><input id="r1" type="checkbox" checked> Mostrar horizonte de eventos</label>
+      <label><input id="r2" type="checkbox"> Mostrar esfera de fótons</label>
+      <label><input id="r3" type="checkbox"> Mostrar última órbita estável</label>
+
+      <p class="lab-actions">
+        <button onclick="launchParticle(5)">Órbita a 5 rs</button>
+        <button onclick="launchParticle(2)">Órbita a 2 rs</button>
+        <button onclick="particles = []">Limpar matéria</button>
+      </p>
+
+      <p class="note">Modelo simplificado: o tamanho na tela não é proporcional à massa real, e a sombra é desenhada com raio igual ao horizonte. Na imagem real, a sombra parece ~2,6 vezes maior por causa da lente.</p>
+    </section>
+
+    <section id="quiz" class="tab"></section>
+  </aside>
+
+  <script src="script.js"></script>
+</body>
+</html>
